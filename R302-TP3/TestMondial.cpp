@@ -196,6 +196,41 @@ void testPrintCityInformation(Mondial& theMondial) {
     cout << endl;
 }
 
+void testPrintAirportsWithGmt(Mondial& theMondial){
+    cout << endl << "******************************" << endl;
+    cout << "*                            *" << endl;
+    cout << "* Aéroports avec choix du gmt *" << endl;
+    cout << "*                            *" << endl;
+    cout << "******************************" << endl << endl;
+    int gmt1 = 1;
+    theMondial.printAirportsWithGmt(gmt1);
+    cout << endl;
+    int gmt2 = 8;
+    theMondial.printAirportsWithGmt(gmt2);
+    cout << endl;
+    int gmt3 = 12;
+    theMondial.printAirportsWithGmt(gmt3);
+    cout << endl;
+    int gmtErreur = 36;
+    theMondial.printAirportsWithGmt(gmtErreur);
+    cout << endl;
+}
+
+void testprintPopulationRanking(Mondial& theMondial){
+    cout << endl << "******************************" << endl;
+    cout << "*                            *" << endl;
+    cout << "* populationRanking *" << endl;
+    cout << "*                            *" << endl;
+    cout << "******************************" << endl << endl;
+    int test1 = 10;
+    theMondial.printPopulationRanking(test1);
+    int test2 = 2;
+    theMondial.printPopulationRanking(test2);
+    int test3 = 3;
+    theMondial.printPopulationRanking(test3);
+
+}
+
 int main() {
 
     /*
@@ -205,26 +240,28 @@ int main() {
 
     // version HB
     //Mondial theMondial("/Users/hb/Documents/ Enseignement/R3.02/TP_Sols/R302-TP3-Correction-compile/mondial_HB.xml");
-
+    //  chemin sur les machine de l'iut : /users/info/pub/s3/R302/mondial_HB.xml
     // pour les étudiants
-    Mondial theMondial("/users/info/pub/s3/R302/mondial_HB.xml");
+    Mondial theMondial(R"(C:\Users\qesti\Documents\IUT2-BUT2\R3.02\R302-TP3\mondial_HB.xml)");
 
     // autre, mettre votre chemin d'accès au fichier XML
     // Mondial theMondial("/MON_CHEMIN_D_ACCES/mondial_HB.xml");
 
     //theMondial.Print();
 
-//    testGetNbAirports(theMondial);
-//    testPrintCodesPays(theMondial);
-//    testGetNbDeserts(theMondial);
-//    testgetNbElemCat(theMondial);
-//    testGetCountryCodeFromName(theMondial);
-//    testGetCountryPopulationFromName(theMondial);
-//    testPrintCountryBorders(theMondial);
+   testGetNbAirports(theMondial);
+    testPrintCodesPays(theMondial);
+    testGetNbDeserts(theMondial);
+    testgetNbElemCat(theMondial);
+    testGetCountryCodeFromName(theMondial);
+    testGetCountryPopulationFromName(theMondial);
+    testPrintCountryBorders(theMondial);
     testPrintAllCountriesCrossedByRiver(theMondial);
-   testPrintCountriesWithProvincesCrossedByRiver(theMondial);
-//    testPrintCountriesAndProvincesCrossedByRiver(theMondial);
-//    testPrintCityInformation(theMondial);
+    testPrintCountriesWithProvincesCrossedByRiver(theMondial);
+    testPrintCountriesAndProvincesCrossedByRiver(theMondial);
+    testPrintCityInformation(theMondial);
+    testPrintAirportsWithGmt(theMondial);
+    testprintPopulationRanking(theMondial);
 
     //theMondial.printIslandsInformations();
     

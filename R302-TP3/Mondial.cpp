@@ -12,6 +12,7 @@
 #include <iomanip>      // pour setw()
 #include <sstream>
 #include <iterator>
+#include <algorithm>
 
 Mondial::Mondial(const char *filename) {
     // Chargement du fichier XML en mémoire
@@ -156,7 +157,9 @@ string Mondial::getCountryCodeFromName(string countryName) const throw(PrecondVi
     // on met le résultat de la fonction récursive dans une variable pour pouvoir vérifier que le résultat n'est pas nullptr
     XMLElement *country = getCountryXmlelementFromNameRec(countryName);
     if (country == nullptr) {
-        throw PrecondVioleeExcep("le pays n'existe pas ou n'est pas présent dans la liste");
+        string message = "Exception pour précondition violée : Dans getCountryCodeFromName, le pays " + countryName +
+                         " n'existe pas !";
+        throw PrecondVioleeExcep(message);
     } else {
         return country->Attribute("car_code");
     }
@@ -197,7 +200,7 @@ int Mondial::getCountryPopulationFromName(string countryName) const {
     } else if (country->LastChildElement("population")->GetText() == nullptr) {
         return 0;
     } else {
-        return atoi(country->LastChildElement("population")->GetText());
+        return stoi(country->LastChildElement("population")->GetText());
     }
 }
 
@@ -240,21 +243,20 @@ void Mondial::printCountryBorders(string countryName) const {
     } else if (country->FirstChildElement("border") == nullptr) {
         cout << "le pays : " << countryName << " n'a pas de frontières" << endl;
     } else {
-        cout << "frontière(s) du pays : " << countryName << endl;
+        cout << "Le pays : " << countryName << endl;
         XMLElement *currentBorder = country->FirstChildElement("border");
         while (currentBorder != nullptr) {
+            cout << " est frontalier avec : ";
             // on récupère le code du pays frontalier
             string currentBorderCountryCode = currentBorder->Attribute("country");
-            cout << currentBorderCountryCode << endl;
             // on récupère le <country> element du pays frontalier
             XMLElement *currentBorderCountry = getCountryXmlelementFromCode(currentBorderCountryCode);
             cout << currentBorderCountry->FirstChildElement("name")->GetText();
-            cout << "longueur de la frontière avec ce pays : " << currentBorder->Attribute("length") << endl;
+            cout << ", la longueur de sa frontière avec celui-ci est : " << currentBorder->Attribute("length") << endl;
 
-            currentBorder = currentBorder->NextSiblingElement();
+            currentBorder = currentBorder->NextSiblingElement("border");
         }
     }
-    // supprimer à partir d'ici après complétion
 }
 
 
@@ -335,7 +337,8 @@ void Mondial::printCountriesAndProvincesCrossedByRiver(string riverName) const {
         cout << "Le fleuve : " << riverName << ", n'existe pas !" << endl;
     } else {
         // le fleuve existe / est présente
-        cout << "Le fleuve : " << riverName << " de longueur " << river->FirstChildElement("length")->GetText() << " traverse les pays suivants :  " << endl;
+        cout << "Le fleuve : " << riverName << " de longueur " << river->FirstChildElement("length")->GetText()
+             << " traverse les pays suivants :  " << endl;
         // on récupère l'attribut country de <river> qui est sous la forme "COUNTRY_CODE COUNTRY_CODE ..."
         string countriesString = river->Attribute("country");
         // on crée une liste des codes des pays traversés par le fleuve,
@@ -474,23 +477,22 @@ void Mondial::printCityInformation(string cityName) const {
     // cela veut dire que l'on n'a pas trouvé la ville
     // cas 2 - cityIsFound = true
     // on a trouvé la ville, on peut affiche ses informations
-    if (!cityIsFound){
+    if (!cityIsFound) {
         cout << "La ville " << cityName << ", n'existe pas !";
     } else {
         // on affiche les informations sur la ville
         cout << "La ville " << cityName << endl
-        << " - se trouve dans le pays : " << currentCountry->FirstChildElement("name")->GetText() << endl;
+             << " - se trouve dans le pays : " << currentCountry->FirstChildElement("name")->GetText() << endl;
         // si le pays a des provinces on affiche la province dans laquelle est la ville
         if (currentProvince) {
-            cout << " - dans la division adminstrative : " << currentProvince->FirstChildElement("name")->GetText() << endl;
+            cout << " - dans la division adminstrative : " << currentProvince->FirstChildElement("name")->GetText()
+                 << endl;
         }
         cout << " - sa latitude est : " << currentCity->FirstChildElement("latitude")->GetText() << endl
-        << " - sa longitude est : " << currentCity->FirstChildElement("longitude")->GetText() << endl
-        << " - son altitude est : " << currentCity->FirstChildElement("elevation")->GetText() << " m" <<endl
-        << " - sa population est : " << currentCity->LastChildElement("population")->GetText() << " habitants" << endl;
+             << " - sa longitude est : " << currentCity->FirstChildElement("longitude")->GetText() << endl
+             << " - son altitude est : " << currentCity->FirstChildElement("elevation")->GetText() << endl
+             << " - sa population est : " << currentCity->LastChildElement("population")->GetText() << endl;
     }
-
-
 
 
 }
@@ -505,6 +507,102 @@ void Mondial::printIslandsInformations() const {
      * A COMPLETER
      */
 }
+
+void Mondial::printPopulationRanking(int numberOfRanks) const {
+    vector<int> PopulationRanking;
+    XMLElement *currentCountry;
+
+    // on accède à <countriescategory>, fils de <racineMondial>
+    XMLElement *countriesCategory = racineMondial->FirstChildElement("countriescategory");
+    // on accède au premier pays dans <countriescategories>
+    currentCountry = countriesCategory->FirstChildElement();
+    vector<int> populations;
+    while (currentCountry != nullptr){
+        for (int i = 0; i < numberOfRanks; i++) {
+            populations.push_back(stoi(currentCountry->FirstChildElement("population")->GetText()));
+            currentCountry = currentCountry->NextSiblingElement("country");
+        }
+        sort(populations.begin(), populations.end());
+        int currentPopulation = stoi(currentCountry->FirstChildElement("population")->GetText());
+        if (currentPopulation > populations.front()){
+            populations.erase(populations.begin());
+            populations.push_back(currentPopulation);
+            sort(populations.begin(), populations.end());
+        }
+        currentCountry = currentCountry->NextSiblingElement("country");
+    }
+    for (auto population:populations) {
+        cout << population << endl;
+    }
+}
+
+/**
+ * fonction permettant de comparer des valeurs de paires de string entres elles
+ * @param pairA première paire à comparer
+ * @param pairB deuxième paire à comparer
+ * @return true si pairA est lexicographiquement inférieur à pairB, renvoie false sinon ( si lexicographiquement : pairB<=pairA)
+ */
+bool stringPairSort(const pair<string,string>& pairA, const pair<string, string>& pairB) {
+    return pairA.second.compare(pairB.second) < 0;
+}
+
+/**
+ * affiche tous les aéroports qui se situent dans la zone gmt+ la valeur rentrée en argument et le pays de ceux-ci.
+ * @param gmt : l'heure de décalage
+ */
+void Mondial::printAirportsWithGmt(int gmtOffset) const {
+    // on accède à <airportscategories>, fils de <racineMondial>
+    XMLElement *airportCategory = racineMondial->FirstChildElement("airportscategory");
+    // on accède au premier aéroport dans <airportscategory>
+    XMLElement *currentAirport = airportCategory->FirstChildElement("airport");
+    // on crée une map qui stockera les aéroports et le pays associé à afficher
+    map<string,string> airport_country;
+    // on parcourt tous les aéroports et on ajoute à la map unqiuement ceux avec comme element fils <gmtOffset> gmtOffset donné en argument
+    while (currentAirport != nullptr) {
+        if (stoi(currentAirport->FirstChildElement("gmtOffset")->GetText()) == gmtOffset) {
+            XMLElement* country = getCountryXmlelementFromCode(currentAirport->Attribute("country"));
+            airport_country.insert({currentAirport->FirstChildElement("name")->GetText(),country->FirstChildElement("name")->GetText()});
+        }
+        currentAirport = currentAirport->NextSiblingElement("airport");
+    }
+    // si aucun aéroport n'est dans cette zone horaire ou si la zone horaire n'existe pas
+    if (airport_country.empty()) {
+        cout << "aucun aéroport n'est présent dans une zone sur la plage horaire gmt+" << gmtOffset << " ou la plage n'existe pas" << endl;
+    } else {
+        // on va trier toute les paires en fonction des pays, pour cela, on doit d'abord mettre les paires dans un vecteur car ce n'est pas possible avec les Maps
+        vector<pair<string,string>> sortedAirport_Country(airport_country.begin(), airport_country.end());
+        // le troisième argument donne la méthode de comparaison, ici stringPairSort qui est une méthode créé au dessus dans la classe
+        sort(sortedAirport_Country.begin(), sortedAirport_Country.end(), stringPairSort);
+
+        // on va utiliser un booléen pour vérifier si la paire suivante change de pays, comme ça on peut afficher uniquement le nom de l'aéroport si ce n'est pas le cas.
+        bool afficherPays = false;
+        cout << "========================================================" << endl;
+        cout << "liste des aéroports avec un décalage horaire de gmt+" << gmtOffset << " : " << endl;
+        cout << "========================================================" << endl;
+        for (auto it = sortedAirport_Country.begin(); it != sortedAirport_Country.end(); it++) {
+
+            if (it->second == sortedAirport_Country.front().second){
+                afficherPays = true;
+            }
+            if (afficherPays){
+                cout << " Aéroports dans le Pays : " << it->second << endl;
+                cout << " ------------------------------------------" << endl << endl;
+                cout << "    * " << it->first << " ( verification pays : " << it->second << ")" << endl;
+                afficherPays = false;
+            }else {
+                cout << "    *" << it->first << " ( verification pays : " << it->second << ")" << endl;
+            }
+            if (it->second != next(it)->second){
+                afficherPays = true;
+                cout << endl;
+            }
+
+        }
+
+
+    }
+}
+
 
 /*
  * Méthodes de service fournies
