@@ -341,18 +341,72 @@ void Mondial::printCountriesAndProvincesCrossedByRiver(string riverName) const {
     XMLElement *river = getRiverXmlelementFromNameIter(riverName);
     // on vérifie si le fleuve existe, si non on affiche un message pour le dire à l'utilisateur.
     if (river == nullptr) {
-        cout << "la rivière : " << riverName << ", n'existe pas !" << endl;
+        cout << "Le fleuve : " << riverName << ", n'existe pas !" << endl;
     } else {
         // la rivière existe / est présente
-        cout << "Le fleuve : " << riverName << endl;
-        // on
-        XMLElement *currentLocatedCountry = river->FirstChildElement("located country");
-        while (currentLocatedCountry->NextSiblingElement("locatedCountry") != nullptr) {
-            cout <<
-                 string provinces = currentLocatedCountry->Attribute("country");
-            // on créé une liste de toutes les provinces
-            vector<string> currentLocatedCountryprovinces = split(provinces, ' ');
+        cout << "Le fleuve : " << riverName << " de longueur " << river->FirstChildElement("length")->GetText() << " traverse les pays suivants :  " << endl;
+        // on récupère l'attribut country de <river> qui est sous la forme "COUNTRY_CODE COUNTRY_CODE ..."
+        string countriesString = river->Attribute("country");
+        // on crée une liste des codes des pays traversés par le fleuve,
+        // elle nous servira ensuite à vérifier si le pays est présent dans la map et à afficher le nom du pays
+        vector<string> countriesCarCode = split(countriesString,' ');
+        // on crée une map <car_code, liste des provinces traversées>
+        // elle nous servira à récupérer les elements provinces pour afficher les noms des provinces
+        map<string,string> countryCarCode_Provinces;
+        // on récupère le premier <located> de river = le premier pays que traverse la rivière
+        XMLElement* currentLocatedCountry = river->FirstChildElement("located");
+        // pour chaque <located> on ajoute à la map la paire <car_code, liste des provinces traversées> correspondante
+        // si le pays est dans <located> cela signifie qu'il a des provinces , la map ne contiendra donc que les pays avec des provinces
+        while (currentLocatedCountry != nullptr){
+            // nouvelle paire entrée dans la map
+            countryCarCode_Provinces.insert({(currentLocatedCountry->Attribute("country")),(currentLocatedCountry->Attribute("province"))});
+            // on avance au prochain pays
+            currentLocatedCountry = currentLocatedCountry->NextSiblingElement("located");
         }
+        // on parcourt countriesCarCode
+        // on affiche le nom du pays et le nom des provinces traversées du pays si il en a
+        // currentCountry correspond a l'element <country> correspondant à un  car_code dans countriesCarCode
+        XMLElement* currentCountry;
+        for (int i = 0; i < countriesCarCode.size(); i++) {
+            currentCountry = getCountryXmlelementFromCode(countriesCarCode[i]);
+            cout << " - " << currentCountry->FirstChildElement("name")->GetText();
+            // on vérifie si le fleuve traverse bien des provinces (normalement, il en traverse forcément)
+            if (!countryCarCode_Provinces.empty()){
+                // on crée un itérateur sur la map à l'emplacement de la paire correspondante à currentCountry pour pouvoir manipuler les clefs et les valeurs de la map
+                auto it = countryCarCode_Provinces.find(countriesCarCode[i]);
+                // on vérifie si le pays courant a des provinces
+                // find() renvoie un itérateur sur la fin de la map  = end() si il n'a pas trouvé l'élément passé en paramètre
+                if (it != countryCarCode_Provinces.end()){
+                    cout << ", où il traverse les divisions administratives suivantes : " << endl;
+                    // on crée une liste de tous les id des provinces traversées
+                    vector<string> provincesId = split(it->second,' ');
+                    // on parcourt la liste des provinces et on essaye de retrouver chacune dans currentCountry
+                        for ( string  id:provincesId) {
+                            // on va à la première province
+                            XMLElement* currentProvince = currentCountry->FirstChildElement("province");
+                            while (currentProvince != nullptr && id != currentProvince->Attribute("id")) {
+                                currentProvince = currentProvince->NextSiblingElement("province");
+                            }
+                            if (currentProvince){
+                                cout << "  * " << currentProvince->FirstChildElement("name")->GetText() << endl;
+                            } else {
+                                cout << " problème de cohérence dans les données..." << endl;
+                            }
+
+                        }
+                } else {
+                    // le fleuve ne traverse pas de province dans le pays courant, on passe au pays suivant en sautant une ligne pour un meilleur affichage
+                    cout << endl;
+                }
+            }
+        }
+
+//        while (currentLocatedCountry->NextSiblingElement("locatedCountry") != nullptr) {
+//            cout << "ee";
+//                 string provinces = currentLocatedCountry->Attribute("country");
+//            // on créé une liste de toutes les provinces
+//            vector<string> currentLocatedCountryprovinces = split(provinces, ' ');
+//        }
     }
 }
 
