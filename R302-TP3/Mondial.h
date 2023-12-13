@@ -45,6 +45,10 @@ public:
     
     void printIslandsInformations() const;
 
+    void printPopulationRanking(int numberOfRanks) const;
+
+    void printAirportsWithGmt(int gmt) const;
+
 
     void Print();
 
